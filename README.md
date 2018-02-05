@@ -155,3 +155,68 @@ Version History
 ---------------
 Actual stable version is 1.5.0 (compatible with Apache Flume 1.8.0)
 Previous stable version is 1.4.3 (compatible with Apache Flume prior to 1.7.0)
+----------------------------------------------------------------------------------------
+Add Hadoop Credential 
+移植sqoop别名模式连接数据库
+sqoop提供数据库密码的4种方式
+
+别名模式
+
+别名模式是一种较新的方式，采用这种方式可以完美解决文件模式里明文存储密码的问题。支持使用在Java keystore中存储的密码，这样我们就不用在文件中明文存储密码了。
+
+首先我们使用hadoop credential create [alias_name] -provider [hdfs_location]命令（该命令在hadoop 2.6.0之后才有）在keystore中创建密码以及密码别名：
+```
+# hadoop credential create mysql.pwd.alias -provider jceks://hdfs/user/password/mysql.pwd.jceks
+```
+在Enter alias password后面输入我们数据库的密码。执行完后，程序在hdfs的/user/password/下创建了一个mysql.pwd.jceks文件，而且mysql.pwd.alias就是我们的密码别名。我们可以使用mysql.pwd.alias来代替我们真实的数据库密码。在flume配置文件中，我们可以使用hibernate.connection.password-file值就是我们刚才自己指定的密码的 [hdfs_location] [alias_name] 以空格分隔；
+那么这种方式是否能够隐藏我们的密码呢？打开mysql.pwd.jceks文件，我们只能看到一片乱码，这就说明别名模式很好地隐藏了我们真实的数据库密码。
+
+```
+
+agent.sources = source-1
+agent.channels = channel-1
+agent.sinks = sink-1
+
+# For each one of the sources, the type is defined
+#agent.sources.seqGenSrc.type = seq
+agent.sources.source-1.type = org.keedio.flume.source.SQLSource
+agent.sources.source-1.hibernate.connection.url = jdbc:mysql://localhost:3306/pccc
+agent.sources.source-1.hibernate.connection.user = root  
+agent.sources.source-1.hibernate.connection.password-file = jceks://hdfs/user/password/mysql.pwd.jceks mysql.pwd.alias
+agent.sources.source-1.hibernate.connection.autocommit = true
+agent.sources.source-1.hibernate.dialect = org.hibernate.dialect.MySQL5Dialect
+agent.sources.source-1.hibernate.connection.driver_class = com.mysql.jdbc.Driver
+agent.sources.source-1.run.query.delay=5000
+agent.sources.source-1.status.file.path = /home/flume/
+#agent.sources.source-1.status.file.path = /home/hadoop/export/server/apache-flume-1.7.0-bin
+agent.sources.source-1.status.file.name = sqlSource.status
+
+agent.sources.source-1.start.from = 0
+agent.sources.source-1.custom.query = select id,username,password,date_day from pccc.test_flume where id > $@$ order by id asc
+agent.sources.source-1.batch.size = 1000
+agent.sources.source-1.max.rows = 1000
+agent.sources.source-1.hibernate.connection.provider_class = org.hibernate.connection.C3P0ConnectionProvider
+agent.sources.source-1.hibernate.c3p0.min_size=1
+agent.sources.source-1.hibernate.c3p0.max_size=10
+
+
+###########################channel
+agent.channels.channel-1.type = memory
+agent.channels.channel-1.capacity = 10000
+agent.channels.channel-1.transactionCapacity = 10000
+agent.channels.channel-1.byteCapacityBufferPercentage = 20
+agent.channels.channel-1.byteCapacity = 800000
+
+
+###################################kafka sink
+agent.sinks.sink-1.type = org.apache.flume.sink.kafka.KafkaSink
+agent.sinks.sink-1.topic = testuser
+agent.sinks.sink-1.brokerList = suse:9092
+agent.sinks.sink-1.requiredAcks = 1
+agent.sinks.sink-1.batchSize = 20
+agent.sinks.sink-1.channel = channel-1
+
+
+agent.sinks.sink-1.channel = channel-1
+agent.sources.source-1.channels = channel-1 
+```
