@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.flume.Context;
 import org.hibernate.CacheMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -13,9 +14,10 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.transform.Transformers;
+import org.keedio.flume.password.CredentialProviderHelper;
+import org.keedio.flume.password.CredentialProviderPasswordLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.flume.Context;
 
 /**
  * Helper class to manage hibernate sessions and perform queries
@@ -33,30 +35,50 @@ public class HibernateHelper {
 	private ServiceRegistry serviceRegistry;
 	private Configuration config;
 	private SQLSourceHelper sqlSourceHelper;
-
 	/**
 	 * Constructor to initialize hibernate configuration parameters
 	 * @param sqlSourceHelper Contains the configuration parameters from flume config file
 	 */
 	public HibernateHelper(SQLSourceHelper sqlSourceHelper) {
-
 		this.sqlSourceHelper = sqlSourceHelper;
 		Context context = sqlSourceHelper.getContext();
-
-		/* check for mandatory propertis */
-		sqlSourceHelper.checkMandatoryProperties();
-
+		CredentialProviderPasswordLoader credentialProviderPasswordLoader = new CredentialProviderPasswordLoader();
+		org.apache.hadoop.conf.Configuration configuration = new org.apache.hadoop.conf.Configuration();
 		Map<String,String> hibernateProperties = context.getSubProperties("hibernate.");
 		Iterator<Map.Entry<String,String>> it = hibernateProperties.entrySet().iterator();
-		
 		config = new Configuration();
 		Map.Entry<String, String> e;
 		
 		while (it.hasNext()){
-			e = it.next();
-			config.setProperty("hibernate." + e.getKey(), e.getValue());
+			try {
+				e = it.next();
+				/**
+				 * Ω“√ÿ√‹¬Î
+				 */
+				if (e.getKey().contains("password")) {
+					if (e.getKey().endsWith("password-file")) {
+						//∆∆Ω‚√‹¬Î
+						String alias = e.getValue().trim().split(" ")[1];
+						configuration.set(CredentialProviderHelper.CREDENTIAL_PROVIDER_PATH,e.getValue().trim().split(" ")[0]);
+						//"jceks://hdfs/user/password/mysql.pwd.jceks"
+						String pass = credentialProviderPasswordLoader
+								.loadPassword(alias, configuration);
+						config.setProperty(
+								"hibernate."
+										+ e.getKey().substring(0,
+												e.getKey().length() - 5), pass);
+					} else if (e.getKey().endsWith("password")) {
+						config.setProperty("hibernate." + e.getKey(),
+								e.getValue());
+					} else {
+						LOG.info("password key is Error!");
+					}
+				}
+				config.setProperty("hibernate." + e.getKey(), e.getValue());
+			} catch (Exception e2) {
+				// TODO: handle exception
+			}
 		}
-
 	}
 
 	/**

@@ -1,15 +1,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-v4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.keedio.flume.flume-ng-sources</groupId>
     <artifactId>flume-ng-sql-source</artifactId>
-    <version>1.5.1-SNAPSHOT</version>
+    <version>1.4.4-SNAPSHOT</version>
 
     <packaging>jar</packaging>
+
     <name>Flume SQL Source</name>
+
     <description>This project is used for flume-ng to import data from SQL databases.</description>
 
     <url>https://github.com/keedio/flume-ng-sql-source</url>
+    	<!-- 需要给定cloudera公司的cdh版本的maven库地址 -->
+	<repositories>
+		<repository>
+			<id>cloudera</id>
+			<url>https://repository.cloudera.com/content/repositories/releases/</url>
+		</repository>
+	</repositories>
 
     <licenses>
         <license>
@@ -46,10 +55,34 @@
     </scm>
 
     <dependencies>
+    <dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-common</artifactId>
+			<version>2.6.0-cdh5.13.0</version>
+		</dependency>
+				<!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-core -->
+		<dependency>
+    		<groupId>org.apache.hadoop</groupId>
+   			 <artifactId>hadoop-core</artifactId>
+    			<version>2.6.0-mr1-cdh5.13.0</version>
+    			<type>pom</type>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-hdfs -->
+		<dependency>
+    		<groupId>org.apache.hadoop</groupId>
+    		<artifactId>hadoop-hdfs</artifactId>
+    		<version>2.6.0-cdh5.13.0</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-client -->
+		<dependency>
+  			  <groupId>org.apache.hadoop</groupId>
+    			<artifactId>hadoop-client</artifactId>
+    			<version>2.6.0-cdh5.13.0</version>
+		</dependency>
         <dependency>
             <groupId>org.apache.flume</groupId>
             <artifactId>flume-ng-core</artifactId>
-            <version>1.8.0</version>
+            <version>1.6.0-cdh5.13.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -120,19 +153,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
