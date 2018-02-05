@@ -158,7 +158,6 @@ Previous stable version is 1.4.3 (compatible with Apache Flume prior to 1.7.0)
 ----------------------------------------------------------------------------------------
 Add Hadoop Credential 
 移植sqoop别名模式连接数据库
-sqoop提供数据库密码的4种方式
 
 别名模式
 
